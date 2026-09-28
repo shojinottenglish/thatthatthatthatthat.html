@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>English Enigma - 英語構造ミステリー</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      background-color: #0f172a; /* slate-900 */
+      color: #f8fafc; /* slate-50 */
+      font-family: 'Noto Serif JP', serif;
+    }
+    .font-eng-title {
+      font-family: 'Cinzel', serif;
+    }
+    .font-eng-text {
+      font-family: 'Georgia', 'Times New Roman', serif;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.5s ease-out forwards;
+    }
+    .glass-panel {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(71, 85, 105, 0.5);
+    }
+    .hidden-state {
+      display: none !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col outline-none selection:bg-purple-500/30" tabindex="0" id="app-container">
+
+  <!-- Header -->
+  <header class="p-4 md:p-6 flex flex-col md:flex-row justify-between items-center border-b border-slate-800 relative">
+    <button id="btn-home" class="hidden md:flex absolute left-6 items-center gap-2 px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition text-sm">
+      <span class="text-xl">⌂</span> Home
+    </button>
+    
+    <div class="text-center w-full">
+      <h1 class="text-3xl md:text-4xl font-eng-title text-purple-400 tracking-widest text-shadow">English Enigma</h1>
+      <p class="text-slate-400 text-sm mt-2 font-light tracking-widest">脳を騙す・英語構造ミステリー</p>
+    </div>
+
+    <div class="hidden md:flex absolute right-6 items-center gap-3">
+      <button id="btn-export-word" class="flex items-center gap-2 px-3 py-2 text-sm bg-purple-900/40 text-purple-300 border border-purple-500/30 rounded-lg hover:bg-purple-800/60 transition shadow-sm font-semibold" title="問題文の一覧をWordファイルでダウンロード">
+        Word出力
+      </button>
+    </div>
+    
+    <!-- Mobile Controls -->
+    <div class="flex md:hidden w-full justify-between mt-4 px-4">
+      <button id="btn-home-mobile" class="text-slate-400 text-sm flex items-center gap-1"><span class="text-lg">⌂</span> Home</button>
+      <button id="btn-export-word-mobile" class="text-purple-400 text-sm">Word出力</button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-grow flex flex-col items-center justify-center p-4 md:p-8 w-full max-w-4xl mx-auto relative">
+    
+    <!-- Progress -->
+    <div class="absolute top-4 right-8 text-slate-500 font-eng-title text-xl flex items-center gap-4">
+      <button id="btn-play-audio" class="w-10 h-10 flex items-center justify-center bg-slate-800/80 text-purple-400 rounded-full hover:bg-slate-700 hover:text-purple-300 transition shadow-[0_0_10px_rgba(168,85,247,0.2)] border border-purple-500/30" title="英文を読み上げます (Aキー)">
+        🔊
+      </button>
+      <div><span id="current-num" class="text-purple-400 text-3xl">1</span> / <span id="total-num">10</span></div>
+    </div>
+
+    <!-- Question Card -->
+    <div class="glass-panel rounded-2xl w-full p-8 md:p-14 shadow-2xl relative mb-6">
+      <div class="absolute -top-4 -left-4 text-6xl text-slate-700 font-eng-title opacity-50">Q</div>
+      <p id="en-text" class="text-3xl md:text-5xl font-eng-text text-center leading-relaxed tracking-wide text-slate-100">
+        Loading...
+      </p>
+    </div>
+
+    <!-- Interactive Buttons -->
+    <div class="flex gap-4 mb-8">
+      <button id="btn-hint" class="px-6 py-3 rounded-full border border-purple-500/50 text-purple-300 hover:bg-purple-900/30 transition shadow-[0_0_15px_rgba(168,85,247,0.2)]">
+        💡 ヒントを見る
+      </button>
+      <button id="btn-answer" class="px-6 py-3 rounded-full bg-purple-600 text-white hover:bg-purple-500 transition shadow-[0_0_20px_rgba(168,85,247,0.4)]">
+        👁️ 真実（正解）を暴く
+      </button>
+    </div>
+
+    <!-- Hint Section -->
+    <div id="hint-container" class="hidden-state w-full glass-panel rounded-xl p-6 mb-4 border-l-4 border-yellow-500/70">
+      <h3 class="text-yellow-400 text-sm tracking-wider mb-2 font-bold">HINT</h3>
+      <p id="hint-text" class="text-lg text-slate-300 leading-relaxed"></p>
+    </div>
+
+    <!-- Answer Section -->
+    <div id="answer-container" class="hidden-state w-full space-y-4">
+      <div class="glass-panel rounded-xl p-6 border-l-4 border-purple-500">
+        <h3 class="text-purple-400 text-sm tracking-wider mb-2 font-bold">TRANSLATION (和訳)</h3>
+        <p id="ja-text" class="text-xl md:text-2xl text-slate-200 leading-relaxed font-bold"></p>
+      </div>
+      
+      <div class="glass-panel rounded-xl p-6 border-l-4 border-blue-500">
+        <h3 class="text-blue-400 text-sm tracking-wider mb-2 font-bold">EXPLANATION (タネ明かし)</h3>
+        <p id="pt-text" class="text-lg text-slate-300 leading-relaxed"></p>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer Navigation -->
+  <footer class="p-6 flex justify-between items-center max-w-4xl mx-auto w-full border-t border-slate-800">
+    <button id="btn-prev" class="text-slate-400 hover:text-white transition flex items-center gap-2 disabled:opacity-20 disabled:cursor-not-allowed">
+      <span class="text-2xl">←</span> 戻る
+    </button>
+    <div class="text-xs text-slate-600 tracking-widest hidden md:block">
+      USE LEFT/RIGHT ARROWS TO NAVIGATE
+    </div>
+    <button id="btn-next" class="text-purple-400 hover:text-purple-300 transition flex items-center gap-2 disabled:opacity-20 disabled:cursor-not-allowed">
+      次へ <span class="text-2xl">→</span>
+    </button>
+  </footer>
+
+  <script>
+    // 脳をバグらせる英語のガーデンパス文・錯覚文コレクション
+    const riddles = [
+      {
+        en: "The old man the boat.",
+        hint: "「old」と「man」の品詞をいつもと違う角度で考えてみましょう。名詞だと思っていたものが実は…？",
+        ja: "老人たちが船を操縦する（船員を務める）。",
+        pt: "「the old(老人たち)」が主語となる名詞句で、「man」が動詞（〜に配置される、〜を操作する）として使われています。[The old = S] [man = V] [the boat = O] という驚きの構造です。"
+      },
+      {
+        en: "Time flies like an arrow; fruit flies like a banana.",
+        hint: "前半と後半で「flies」と「like」の品詞が入れ替わっています。後半の主語は何でしょうか？",
+        ja: "光陰矢のごとし（時間は矢のように飛ぶ）。ショウジョウバエはバナナを好む。",
+        pt: "前半は [Time = S] [flies = V] [like = 助動詞]。\n後半は [fruit flies(ショウジョウバエ) = S] [like(好む) = V] [a banana = O] という構造の言葉遊び（ジョーク）です。"
+      },
+      {
+        en: "The complex houses married and single soldiers and their families.",
+        hint: "「complex」と「houses」の品詞に注目してください。複雑な家？それとも…？",
+        ja: "その複合施設（コンプレックス）は、既婚および独身の兵士とその家族を収容している。",
+        pt: "「The complex(複合施設)」が主語の名詞で、「houses(〜を収容する)」が動詞です。「複雑な家々」と解釈すると最後まで意味が通りません。"
+      },
+      {
+        en: "Fat people eat accumulates.",
+        hint: "「Fat」と「people」の間に省略されているものがあります。最後の「accumulates」が本動詞です。",
+        ja: "人々が食べる脂肪は蓄積する。",
+        pt: "Fat と people の間に関係代名詞(that/which)が省略されています。[Fat (that) people eat = S] [accumulates(蓄積する) = V] となります。"
+      },
+      {
+        en: "The cotton clothing is made of grows in the south.",
+        hint: "「is made of」と「grows」の2つの動詞があります。全体の主語はどこまででしょうか？",
+        ja: "服の素材となる綿花は、南部で育つ。",
+        pt: "The cotton の後ろに関係代名詞が省略されています。[The cotton (which) clothing is made of = S] [grows = V] in the south. となります。"
+      },
+      {
+        en: "All the faith he had had had had no effect on the outcome.",
+        hint: "タイピングミスではありません。「had」が4つ並んでいますが、前半の2つと後半の2つでカタマリを分けます。",
+        ja: "彼が抱いていたすべての信仰は、結果に何の影響も与えなかった。",
+        pt: "関係代名詞の省略と過去完了の連続です。\nAll the faith [ (that) he (S') had had (V':過去完了) ] までが主語。\nその後の [ had had (V:過去完了) ] no effect が主節の動詞です。"
+      },
+      {
+        en: "Mary gave the child the dog bit a band-aid.",
+        hint: "「bit」と「a band-aid」が並んでいる違和感に気づけましたか？「gave」の2つの目的語を探してください。",
+        ja: "メアリーは犬に噛まれた子供に絆創膏をあげた。",
+        pt: "the child の後ろに関係代名詞(whom)が省略されています。\nMary gave [the child (whom) the dog bit(犬が噛んだ)] [a band-aid]. というSVOOの第4文型です。"
+      },
+      {
+        en: "The horse raced past the barn fell.",
+        hint: "「raced」は過去形でしょうか？それとも…？最後の「fell」が全体の述語動詞です。",
+        ja: "納屋のそばを走らされた馬が倒れた。",
+        pt: "ガーデンパス文の代表例。[The horse (which was) raced(走らされた) past the barn] までが主語で、[fell]が動詞です。racedを能動態の過去形と勘違いすると迷子になります。"
+      },
+      {
+        en: "The boat floated down the river sank.",
+        hint: "「floated」と「sank」の2つの動詞（に見えるもの）があります。本当に動詞なのはどちらでしょう？",
+        ja: "川を下るように流されたボートが沈んだ。",
+        pt: "[The boat (which was) floated(流された) down the river = S] [sank = V] という構造。floatedは過去分詞で名詞を後ろから修飾しています。"
+      },
+      {
+        en: "The boy told the story cried.",
+        hint: "少年は物語を「話した」のでしょうか？それとも…？",
+        ja: "その物語を聞かされた少年は泣いた。",
+        pt: "「told」は受動態の過去分詞（話された＝聞かされた）。[The boy (who was) told the story = S] [cried = V] となります。"
+      },
+      {
+        en: "I convinced her children are noisy.",
+        hint: "「convinced」の目的語は「her children」でしょうか？",
+        ja: "私は彼女に、子供というものは騒がしいものだと納得させた。",
+        pt: "I convinced her (that) children are noisy. という、thatが省略されたSVOO構文です。her children（彼女の子供たち）と繋げて読んでしまうと意味が通らなくなります。"
+      },
+      {
+        en: "The prime number few.",
+        hint: "数学の話ではありません。「The prime」が主語で「number」が動詞です。",
+        ja: "全盛期の人々は数が少ない。",
+        pt: "「prime number (素数)」という強い結びつきに脳が引っ張られますが、[The prime (最盛期の人々) = S] [number (〜の数にのぼる) = V] [few = C] という構造です。"
+      },
+      {
+        en: "The round block the box.",
+        hint: "「丸いブロック」ではありません。主語と動詞はそれぞれどれでしょう？",
+        ja: "丸いものたちが、その箱をふさいでいる。",
+        pt: "「The + 形容詞」で「〜な人々/〜なもの」を表します。[The round(丸いものたち) = S] [block(ふさぐ) = V] [the box = O]。"
+      },
+      {
+        en: "Have the students who failed the exam take the supplementary test.",
+        hint: "「Have」から始まっていますが、これは疑問文（完了形）でしょうか？",
+        ja: "試験に落ちた学生たちに、追試を受けさせなさい。",
+        pt: "疑問文だと勘違いしがちですが、使役動詞 Have で始まる命令文です。\n[Have(〜させよ)] [the students who failed the exam(O)] [take(原形不定詞:V) the supplementary test]."
+      },
+      {
+        en: "I know the words to that song about the queen don't rhyme.",
+        hint: "主語がどこまで続くかに注目してください。韻を踏まない(don't rhyme)のは何ですか？",
+        ja: "女王について歌ったその曲の歌詞が、韻を踏んでいないことを私は知っている。",
+        pt: "I know (that) [the words to that song about the queen] don't rhyme. \n「that song」を接続詞のthatだと空目してしまうと、文の構造が崩壊します。"
+      },
+      {
+        en: "The bold zip their jackets.",
+        hint: "「The bold」が何を意味するかが鍵です。形容詞＋名詞の組み合わせではありません。",
+        ja: "勇敢な人々は自分のジャケットのジッパーを閉める。",
+        pt: "The + 形容詞（〜な人々）。[The bold = S(勇敢な人々)] [zip = V(ジッパーを閉める)] [their jackets = O] です。"
+      },
+      {
+        en: "The rat the cat the dog chased killed ate the malt.",
+        hint: "「センター埋め込み構文」と呼ばれる、脳のメモリの限界に挑む構造です。関係代名詞の省略が2回連続しています。",
+        ja: "犬が追いかけた猫が殺したネズミが、麦芽を食べた。",
+        pt: "The rat [ (which) the cat { (which) the dog chased } killed ] ate the malt.\n主語 The rat に対応する動詞は、一番最後にある ate です。"
+      },
+      {
+        en: "Buffalo buffalo Buffalo buffalo buffalo buffalo Buffalo buffalo.",
+        hint: "文法的に完全に正しい文です。Buffalo(地名)、buffalo(動物のバッファロー)、buffalo(動詞：いじめる)の3つの意味が組み合わさっています。",
+        ja: "ニューヨーク州バッファローのバッファローがいじめる、ニューヨーク州バッファローのバッファローは、ニューヨーク州バッファローのバッファローをいじめる。",
+        pt: "[Buffalo(地名) buffalo(動物)] { (that) [Buffalo(地名) buffalo(動物)] buffalo(動詞:いじめる) } buffalo(動詞:いじめる) [Buffalo(地名) buffalo(動物)]. \n同音異義語を使った極限の言葉遊びです。"
+      },
+      {
+        en: "I think that that that that that boy wrote is wrong.",
+        hint: "5つのthatはすべて役割（品詞）が違います。「あの」や「〜ということ」など、どのthatがどの役割かパズルのように当てはめてみましょう。引用符を補うとわかりやすいです。",
+        ja: "私は、あの少年が書いたあの「that」は間違っていると思う。",
+        pt: "I think [that(接続詞)] (あの) \"that\" <(関係代名詞) (あの) boy wrote> is wrong. という構造です。\nthat節の中の主語は「\"that\"」、動詞は「is」です。"
+      },
+      {
+        en: "James while John had had had had had had had had had had had a better effect on the teacher.",
+        hint: "英語圏で最も有名なパンクチュエーション（句読点）パズルです。ジェームズとジョンという2人の生徒が「had」と「had had」という単語についてテストで回答した状況を想像してください。",
+        ja: "ジェームズは、ジョンが「had」と書いたのに対し、「had had」と書いた。そして「had had」の方が先生には好印象だった。",
+        pt: "正しく句読点と引用符を補うとこうなります。\nJames, while John had had \"had\", had had \"had had\"; \"had had\" had had a better effect on the teacher.\n「過去完了形のhad（had + 過去分詞のhad）」と「名詞としての\"had\"」が入り乱れた究極の言葉遊びです。"
+      }
+    ];
+
+    let currentIndex = 0;
+    
+    // DOM Elements
+    const enTextEl = document.getElementById('en-text');
+    const hintContainer = document.getElementById('hint-container');
+    const hintTextEl = document.getElementById('hint-text');
+    const answerContainer = document.getElementById('answer-container');
+    const jaTextEl = document.getElementById('ja-text');
+    const ptTextEl = document.getElementById('pt-text');
+    
+    const currentNumEl = document.getElementById('current-num');
+    const totalNumEl = document.getElementById('total-num');
+    
+    const btnPlayAudio = document.getElementById('btn-play-audio');
+    const btnExportWord = document.getElementById('btn-export-word');
+    const btnExportWordMobile = document.getElementById('btn-export-word-mobile');
+    const btnHome = document.getElementById('btn-home');
+    const btnHomeMobile = document.getElementById('btn-home-mobile');
+
+    const btnHint = document.getElementById('btn-hint');
+    const btnAnswer = document.getElementById('btn-answer');
+    const btnPrev = document.getElementById('btn-prev');
+    const btnNext = document.getElementById('btn-next');
+    const appContainer = document.getElementById('app-container');
+
+    // Initialize UI
+    function init() {
+      totalNumEl.textContent = riddles.length;
+      updateUI();
+      appContainer.focus();
+    }
+
+    function updateUI() {
+      const riddle = riddles[currentIndex];
+      
+      // Update Problem
+      currentNumEl.textContent = currentIndex + 1;
+      enTextEl.textContent = riddle.en;
+      
+      // Reset States
+      hintContainer.classList.add('hidden-state');
+      answerContainer.classList.add('hidden-state');
+      btnHint.classList.remove('hidden-state');
+      btnAnswer.classList.remove('hidden-state');
+      
+      // Populate hidden texts
+      hintTextEl.innerHTML = riddle.hint.replace(/\n/g, '<br>');
+      jaTextEl.innerHTML = riddle.ja.replace(/\n/g, '<br>');
+      ptTextEl.innerHTML = riddle.pt.replace(/\n/g, '<br>');
+      
+      // Buttons state
+      btnPrev.disabled = currentIndex === 0;
+      btnNext.disabled = currentIndex === riddles.length - 1;
+    }
+
+    // Actions
+    function playAudio(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.85; // 少しゆっくり
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    function goHome() {
+      window.speechSynthesis?.cancel();
+      currentIndex = 0;
+      updateUI();
+    }
+
+    function exportToWord() {
+      let content = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head>
+          <meta charset='utf-8'>
+          <title>English Enigma 問題一覧</title>
+          <style>
+            body { font-family: 'Century', 'Times New Roman', serif; }
+            li { margin-bottom: 12px; font-size: 11pt; line-height: 1.5; }
+            h1 { font-family: 'MS Mincho', 'ＭＳ 明朝', serif; font-size: 14pt; margin-bottom: 20px; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <h1>English Enigma (ガーデンパス文・錯覚文) 問題一覧</h1>
+          <ol>
+      `;
+      
+      riddles.forEach(r => {
+        content += `<li>${r.en}</li>\n`;
+      });
+
+      content += `
+          </ol>
+        </body>
+        </html>
+      `;
+
+      const blob = new Blob(['\ufeff', content], { type: 'application/msword' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'English_Enigma_問題一覧.doc';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    function showHint() {
+      hintContainer.classList.remove('hidden-state');
+      hintContainer.classList.add('animate-fade-in');
+      btnHint.classList.add('hidden-state');
+    }
+
+    function showAnswer() {
+      answerContainer.classList.remove('hidden-state');
+      answerContainer.classList.add('animate-fade-in');
+      btnAnswer.classList.add('hidden-state');
+    }
+
+    function goNext() {
+      if (currentIndex < riddles.length - 1) {
+        window.speechSynthesis?.cancel();
+        currentIndex++;
+        updateUI();
+      }
+    }
+
+    function goPrev() {
+      if (currentIndex > 0) {
+        window.speechSynthesis?.cancel();
+        currentIndex--;
+        updateUI();
+      }
+    }
+
+    btnPlayAudio.addEventListener('click', () => playAudio(riddles[currentIndex].en));
+    btnExportWord.addEventListener('click', exportToWord);
+    if(btnExportWordMobile) btnExportWordMobile.addEventListener('click', exportToWord);
+    btnHome.addEventListener('click', goHome);
+    if(btnHomeMobile) btnHomeMobile.addEventListener('click', goHome);
+
+    btnHint.addEventListener('click', showHint);
+    btnAnswer.addEventListener('click', showAnswer);
+    btnNext.addEventListener('click', goNext);
+    btnPrev.addEventListener('click', goPrev);
+
+    // Keyboard controls
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') {
+        goNext();
+      } else if (e.key === 'ArrowLeft') {
+        goPrev();
+      } else if (e.key === 'a' || e.key === 'A') {
+        playAudio(riddles[currentIndex].en);
+      } else if (e.key === ' ') {
+        // Spacebar to reveal incrementally
+        e.preventDefault();
+        if (hintContainer.classList.contains('hidden-state')) {
+          showHint();
+        } else if (answerContainer.classList.contains('hidden-state')) {
+          showAnswer();
+        } else {
+          goNext();
+        }
+      }
+    });
+
+    // Run
+    init();
+  </script>
+</body>
+</html>
